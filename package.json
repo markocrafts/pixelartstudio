@@ -1,0 +1,34 @@
+{
+  "name": "pixelartstudio",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "deploy": "./deploy.sh",
+    "e2e": "node e2e/smoke.mjs",
+    "build:vps": "tsc --noEmit && vite build --base=/pixelartstudio/ --outDir=dist-vps"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.14.0",
+    "globals": "^17.14.0",
+    "playwright-core": "^1.65.0",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.72.2",
+    "vite": "^8.3.8",
+    "vite-plugin-pwa": "^2.0.0",
+    "vitest": "^5.1.0"
+  },
+  "dependencies": {
+    "fflate": "^0.8.3",
+    "gifenc": "^1.0.3",
+    "idb": "^8.0.4"
+  }
+}
