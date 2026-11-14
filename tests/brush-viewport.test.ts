@@ -3,7 +3,7 @@ import { brushFootprint, clampBrushSize } from '../src/core/brush';
 import { compositeFrame } from '../src/core/composite';
 import { hexToPacked, packRGBA, packedToHex } from '../src/core/pixels';
 import { clampSize, createProject } from '../src/core/project';
-import { Viewport } from '../src/render/viewport';
+import { Viewport, clampToCanvas } from '../src/render/viewport';
 
 describe('brush', () => {
   it('square footprints have size^2 cells', () => {
@@ -87,5 +87,20 @@ describe('Viewport', () => {
     expect(v.zoom).toBe(16); // 32*16=512 <= 552; 32*24=768 > 552
     expect(v.panX).toBe((800 - 512) / 2);
     expect(v.panY).toBe((600 - 512) / 2);
+  });
+});
+
+describe('clampToCanvas / center', () => {
+  it('clamps to the canvas edges', () => {
+    expect(clampToCanvas(-5, 40, 32, 32)).toEqual({ x: 0, y: 31 });
+    expect(clampToCanvas(10, 10, 32, 32)).toEqual({ x: 10, y: 10 });
+  });
+  it('center keeps zoom', () => {
+    const vp = new Viewport();
+    vp.zoom = 4;
+    vp.center(400, 300, 32, 32);
+    expect(vp.zoom).toBe(4);
+    expect(vp.panX).toBe(136);
+    expect(vp.panY).toBe(86);
   });
 });

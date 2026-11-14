@@ -25,6 +25,7 @@ export const ACTIONS: ActionDef[] = [
   { id: 'tool:move', label: 'Move', group: 'Tools', key: 'v' },
   { id: 'tool:text', label: 'Text', group: 'Tools', key: 't' },
   { id: 'swapColors', label: 'Swap primary / secondary', group: 'Colors', key: 'x' },
+  { id: 'centerView', label: 'Center canvas', group: 'View', key: '0' },
   { id: 'zoomIn', label: 'Zoom in', group: 'View', key: '+' },
   { id: 'zoomOut', label: 'Zoom out', group: 'View', key: '-' },
   { id: 'prevFrame', label: 'Previous frame', group: 'Animation', key: ',' },

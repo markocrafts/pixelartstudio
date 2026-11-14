@@ -166,3 +166,6 @@ dialog.settings[open] { display:flex; flex-direction:column; }
   .status { flex-wrap:wrap; gap:6px 10px; }
 }
 @media (pointer: coarse) { button, select { min-height:36px; } .swatch { width:20px; height:20px; } }
+
+dialog .dim { display:inline-flex; align-items:center; gap:4px; color:var(--muted); }
+dialog .dim input { width:70px; }

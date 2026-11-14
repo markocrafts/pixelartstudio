@@ -11,7 +11,7 @@ export const SETTINGS_TEMPLATE = `
     </section>
     <section>
       <h4>Custom grid</h4>
-      <div class="row"><span>Cell size</span><input type="number" id="stGridW" min="0" max="256" class="narrow"> &times; <input type="number" id="stGridH" min="0" max="256" class="narrow"><span class="hint">0 = off, e.g. 16 &times; 16 for tiles</span></div>
+      <div class="row"><span>Cell size</span><label class="dim">Width <input type="number" id="stGridW" min="0" max="256" class="narrow" aria-label="Grid cell width"></label> &times; <label class="dim">Height <input type="number" id="stGridH" min="0" max="256" class="narrow" aria-label="Grid cell height"></label><span class="hint">0 = off, e.g. 16 &times; 16 for tiles</span></div>
       <div class="row"><span>Color</span><input type="color" id="stGridColor"></div>
     </section>
     <section>

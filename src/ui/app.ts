@@ -9,7 +9,7 @@ import { EXPORT_SCALES, downloadBlob, exportPngBlob } from '../io/png';
 import { Renderer } from '../render/renderer';
 import { hasProject, loadProject, storageAvailable } from '../storage/db';
 import { startAutosave } from '../storage/autosave';
-import { Viewport } from '../render/viewport';
+import { Viewport, clampToCanvas } from '../render/viewport';
 import { openColorPicker, type PickerHandle } from './colorpicker';
 import { ANIM_DIALOGS_TEMPLATE, mountAnimIo } from './anim-export';
 import { GALLERY_TEMPLATE, mountGallery } from './gallery';
@@ -185,7 +185,8 @@ ${TIMELINE_TEMPLATE}
   <button id="zout" title="Zoom out (-)">&minus;</button>
   <span id="zoom" style="min-width:42px;text-align:center"></span>
   <button id="zin" title="Zoom in (+)">+</button>
-  <button id="fit">Fit</button>
+  <button id="fit" title="Fit the canvas to the window">Fit</button>
+  <button id="center" title="Center the canvas (keeps zoom)">Center</button>
   <button id="actual">100%</button>
   <label><input type="checkbox" id="grid" checked> Grid</label>
   <button id="toggleSide" title="Show or hide the Preview / Layers / Palette panels">Panels</button>
@@ -195,7 +196,8 @@ ${TIMELINE_TEMPLATE}
   <form method="dialog" id="newform">
     <h3>New project</h3>
     <div class="row"><span>Preset</span><select id="preset">${PRESETS.map((p) => `<option value="${p}">${p} &times; ${p}</option>`).join('')}<option value="custom">Custom</option></select></div>
-    <div class="row"><span>Size</span><input type="number" id="nw" min="1" max="${MAX_CANVAS_SIZE}" value="32"> &times; <input type="number" id="nh" min="1" max="${MAX_CANVAS_SIZE}" value="32"></div>
+    <div class="row"><span>Size</span><label class="dim">Width <input type="number" id="nw" min="1" max="${MAX_CANVAS_SIZE}" value="32" aria-label="Width in pixels" title="Width in pixels"></label> &times; <label class="dim">Height <input type="number" id="nh" min="1" max="${MAX_CANVAS_SIZE}" value="32" aria-label="Height in pixels" title="Height in pixels"></label></div>
+    <div class="row"><span></span><span class="hint" id="nsum"></span></div>
     <div class="row"><span>Background</span><select id="bg"><option value="transparent">Transparent</option><option value="white">White</option><option value="color">Color</option></select><input type="color" id="bgcolor" value="#ffffff" class="hidden"></div>
     <div class="actions"><button value="cancel">Cancel</button><button value="ok" class="active">Create</button></div>
   </form>
@@ -206,7 +208,7 @@ ${SETTINGS_TEMPLATE}
 <dialog id="sizedlg">
   <form method="dialog" id="sizeform">
     <h3>Canvas size</h3>
-    <div class="row"><span>Size</span><input type="number" id="cw" min="1" max="${MAX_CANVAS_SIZE}"> &times; <input type="number" id="ch" min="1" max="${MAX_CANVAS_SIZE}"></div>
+    <div class="row"><span>Size</span><label class="dim">Width <input type="number" id="cw" min="1" max="${MAX_CANVAS_SIZE}" aria-label="Width in pixels" title="Width in pixels"></label> &times; <label class="dim">Height <input type="number" id="ch" min="1" max="${MAX_CANVAS_SIZE}" aria-label="Height in pixels" title="Height in pixels"></label></div>
     <div class="row"><span>Mode</span><select id="sizeMode"><option value="resize">Resize canvas (keeps pixels)</option><option value="scale">Scale image (nearest)</option></select></div>
     <div class="row" id="anchorRow"><span>Anchor</span><div class="anchors">${Array.from({ length: 9 }, (_, i) => anchorCell(i)).join('')}</div></div>
     <div class="actions"><button value="cancel">Cancel</button><button value="ok" class="active">Apply</button></div>
@@ -510,9 +512,14 @@ export function mountApp(root: HTMLElement): { editor: Editor } {
   const bg = $<HTMLSelectElement>('bg');
   const bgc = $<HTMLInputElement>('bgcolor');
   preset.addEventListener('change', () => { if (preset.value !== 'custom') nw.value = nh.value = preset.value; });
-  for (const el of [nw, nh]) el.addEventListener('input', () => { preset.value = nw.value === nh.value && PRESETS.includes(Number(nw.value)) ? nw.value : 'custom'; });
+  const nsum = $('nsum');
+  const sumNew = (): void => { nsum.textContent = `${nw.value || '?'} px wide × ${nh.value || '?'} px tall`; };
+  preset.addEventListener('change', sumNew);
+  sumNew();
+  for (const el of [nw, nh]) el.addEventListener('input', () => { sumNew(); preset.value = nw.value === nh.value && PRESETS.includes(Number(nw.value)) ? nw.value : 'custom'; });
   bg.addEventListener('change', () => bgc.classList.toggle('hidden', bg.value !== 'color'));
   $('new').addEventListener('click', () => {
+    sumNew();
     dlg.showModal();
   });
   dlg.addEventListener('close', () => {
@@ -550,6 +557,12 @@ export function mountApp(root: HTMLElement): { editor: Editor } {
   $('zin').addEventListener('click', () => zoomBy(1));
   $('zout').addEventListener('click', () => zoomBy(-1));
   $('fit').addEventListener('click', fitView);
+  const centerView = (): void => {
+    vp.center(renderer.width, renderer.height, editor.project.width, editor.project.height);
+    updateInfo();
+    renderer.requestDraw();
+  };
+  $('center').addEventListener('click', centerView);
   $('actual').addEventListener('click', () => {
     vp.actualSize(renderer.width, renderer.height, editor.project.width, editor.project.height);
     updateInfo();
@@ -673,8 +686,10 @@ export function mountApp(root: HTMLElement): { editor: Editor } {
     } else if (drawPointer === e.pointerId) {
       const mods = { shift: e.shiftKey, alt: e.altKey };
       const events = e.getCoalescedEvents?.();
+      const clampStroke = !editor.tileMode && editor.tool !== 'move';
       for (const ev of events && events.length ? events : [e]) {
-        const q = vp.screenToPixel(...local(ev));
+        let q = vp.screenToPixel(...local(ev));
+        if (clampStroke) q = clampToCanvas(q.x, q.y, editor.project.width, editor.project.height);
         editor.pointerMove(q.x, q.y, mods, pressure(e));
       }
     }
@@ -752,6 +767,7 @@ export function mountApp(root: HTMLElement): { editor: Editor } {
     else if (action === 'swapColors') editor.swapColors();
     else if (action === 'prevFrame') step(-1);
     else if (action === 'nextFrame') step(1);
+    else if (action === 'centerView') centerView();
     else if (action === 'zoomIn') zoomBy(1);
     else if (action === 'zoomOut') zoomBy(-1);
     else if (action === 'togglePlay') preview.togglePlay();

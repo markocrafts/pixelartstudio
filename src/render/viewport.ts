@@ -60,3 +60,8 @@ export class Viewport {
     this.center(viewW, viewH, imgW, imgH);
   }
 }
+
+/** Clamp a pixel coordinate to the canvas so a stroke stops at the edge instead of leaving it. */
+export function clampToCanvas(x: number, y: number, w: number, h: number): { x: number; y: number } {
+  return { x: Math.min(Math.max(x, 0), w - 1), y: Math.min(Math.max(y, 0), h - 1) };
+}
